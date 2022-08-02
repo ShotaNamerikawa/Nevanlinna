@@ -39,7 +39,7 @@ module nevanlinna
         end
     end
 
-    function readgreenfile(greenfile::String;order::String = "asc",statistics::String="F")
+    function readgreenfile(greenfile::String;T=Double64,order::String = "asc",statistics::String="F")
         fp = open(greenfile,"r") 
         lines = readlines(fp)
         close(fp)
@@ -47,15 +47,16 @@ module nevanlinna
         nev_value = Complex[]
         for x in lines
             line = split(x," ")
-            matsubara = Double64(parse(Float64,line[1]))
-            G_real = Double64(parse(Float64,line[2]))
-            G_imag = Double64(parse(Float64,line[3]))
+            matsubara = T(parse(Float64,line[1]))
+            G_real = T(parse(Float64,line[2]))
+            G_imag = T(parse(Float64,line[3]))
             if matsubara > 0
                 push!(imag_points,1im*matsubara)
                 if statistics == "F"
                     push!(nev_value,-G_real-1im*G_imag)
                 elseif statistics == "B"
                     push!(nev_value,-1.0im*matsubara*(G_real+1im*G_imag))
+                    #push!(nev_value,-(1/-1.0im*matsubara)*(G_real+1im*G_imag))
                 end
             end            
         end
@@ -92,9 +93,13 @@ module nevanlinna
     end
 
     function Nevanlinna(greenfile::String,real_points::Vector{Float64},delta::Float64
-        ,k_num::Int64;order::String="asc",statistics="F")
-        nev_func = readgreenfile(greenfile,order=order,statistics=statistics)
+        ,k_num::Int64;T=Double64,order::String="asc",statistics="F")
+        nev_func = readgreenfile(greenfile;T=T,order=order,statistics=statistics)
         Nevanlinna(nev_func,real_points,delta,k_num)
+    end
+
+    function readparameterfile(file::String)
+        prinln("not implemented")
     end
 
     mutable struct Integralinfo
@@ -127,8 +132,8 @@ module nevanlinna
         end
     end
 
-    function pick_derive(nev::Nevanlinna) 
-        pick = zeros(nev.p_num,nev.p_num);
+    function pick_derive(nev::Nevanlinna{T}) where T 
+        pick = zeros(T,nev.p_num,nev.p_num);
         for i in nev.p_num
             for j in nev.p_num
                 pick[i,j] = (1 - nev.thetas[i]*conj(nev.thetas[j]))/(1 - mebius(nev.imag_points[i])*conj(mebius(nev.imag_points[j])));
@@ -267,6 +272,10 @@ module nevanlinna
         1/pi*imag(1/(x+nev.delta*1im)*interpolate(nev,x + nev.delta*1im))
     end
 
+    function boson_spectral_derive(nev::Nevanlinna,x::Float64,delta::Number)
+        1/pi*imag(1/(x+delta*1im)*interpolate(nev,x + delta*1im))
+    end
+
     function boson_spectral_hardy_derive(nev::Nevanlinna,x::Float64)
         1/pi*imag(1/(x+nev.delta*1im)*interpolate_hardy(nev,x + nev.delta*1im))
     end
@@ -305,6 +314,7 @@ module nevanlinna
             end
         end
     end
+
 
     function write_boson_spectrum(nev::Nevanlinna,outfile::String;hardy=true)
         println("export Boson spectrum")
@@ -385,7 +395,10 @@ module nevanlinna
         @time G[:] = refrain_curveture(iinfo,f)
     end
 
-    function optimize_spectrum!(iinfo::Integralinfo)
+    function optimize_spectrum!(iinfo::Integralinfo;statistics="Fermi",iterations=1000,
+        linesearch = LineSearches.BackTracking(order=2),
+        initialalpha = LineSearches.InitialStatic(scaled=true))
+        println(statistics)
         start = time()
         norm = x -> spectral_hardy_derive(iinfo.nev,x)
         curv = x -> spectral_derive_second(iinfo.nev,x)^2     
@@ -393,6 +406,34 @@ module nevanlinna
         curv_grad = x -> (y = spectral_derive_para_second(iinfo.nev,x);
                           z = spectral_derive_second(iinfo.nev,x);
                           2*z.*y)
+        function fermi_functional(coeff)
+            iinfo.nev.hardy_coeff = coeff
+            spectralintegral(iinfo,norm,curv)
+        end
+
+        function fermi_functional_grad!(G,coeff) 
+            iinfo.nev.hardy_coeff =coeff
+            spectralgrad!(iinfo,G,norm_grad,curv_grad)
+        end
+
+        function bose_functional(coeff)
+            iinfo.nev.hardy_coeff = coeff
+            spectralintegralcurvonly(iinfo,curv)
+        end
+
+        function bose_functional_grad!(G,coeff) 
+            iinfo.nev.hardy_coeff =coeff
+            spectralgradcurvonly!(iinfo,G,curv_grad)
+        end
+            
+        if statistics == "Fermi"
+            functional = fermi_functional
+            funktional_grad! = fermi_functional_grad!
+        elseif statistics == "Bose"            
+            functional = bose_functional
+            funktional_grad! = bose_functional_grad!
+        end
+        
         function cb!(os)
             over = time()
             println("callback")
@@ -405,16 +446,32 @@ module nevanlinna
             println("callback/")
             return false
         end
+        
+        function funktional(iinfo::Integralinfo,coeff)
+            iinfo.nev.hardy_coeff = coeff
+            spectralintegralcurvonly(iinfo,curv)
+        end
+        function funktional_grad!(iinfo::Integralinfo,G,coeff) 
+            iinfo.nev.hardy_coeff =coeff
+            spectralgradcurvonly!(iinfo,G,curv_grad)
+        end
+        
+        a = funktional
+        b = funktional_grad!
         #precond(n) = spdiagm(-1=> -ones(n-1),0=>2*ones(n),1=>-ones(n-1))*(n+1)
         rng = MersenneTwister(100)
         random = rand(rng,iinfo.nev.k_num*4).*0.001
         println("optimize start")
-        res = optimize(coeff -> (iinfo.nev.hardy_coeff = coeff;
-        spectralintegral(iinfo,norm,curv))
-        ,(G,coeff) -> (iinfo.nev.hardy_coeff 
-        =coeff;spectralgrad!(iinfo,G,norm_grad,curv_grad)),zeros(Double64,iinfo.nev.k_num*4)
-        ,LBFGS(alphaguess=initialalpha,linesearch=linesearch),Optim.Options(iterations = 1000,time_limit=32400,
-        show_trace=true))
+        optimize_cal!(a,b,iinfo,linesearch
+        ,initialalpha,iterations)
+    end
+
+    function optimize_cal!(functional,functional_grad!,iinfo::Integralinfo
+        ,linesearch,initialalpha,iterations)
+        res = optimize(coeff->functional(iinfo,coeff)
+        ,(G,coeff)->functional_grad!(iinfo,G,coeff),zeros(Double64,iinfo.nev.k_num*4)
+        ,LBFGS(alphaguess=initialalpha,linesearch=linesearch),Optim.Options(
+        iterations = iterations,time_limit=32400,show_trace=true))
         #zeros(Float64,iinfo.nev.k_num*4)
         #=(G,coeff) -> (iinfo.nev.hardy_coeff 
         =coeff;spectralgrad!(iinfo,G,norm_grad,curv_grad)),=#
@@ -447,53 +504,33 @@ module operation
 end
 =#
 
+#=
 using .nevanlinna
 using Zygote
 using QuadGK
 using LinearAlgebra
 using DoubleFloats
-num = 2000
-min = -30.0
-max = 30.0
-wmin = -30.0
-wmax = 30.0
+using MultiFloats
+num = 10000
+min = -1
+max = 1
+wmin = -100.0
+wmax = 100.0
 real_points = collect(range(min,max;length=num))
-nev = nevanlinna.Nevanlinna("trG_up_Fe_10_Co_0.dat"
-,real_points,0.1,25;order="asc",statistics="F")
-iinfo = nevanlinna.Integralinfo(nev,wmin,wmax,0.0001;spectrumsum=8)
-#a = big(2.0)
-nev.hardy_coeff[:] = [0.000 for x in 1:4*nev.k_num]
-norm = x -> nevanlinna.spectral_hardy_derive(iinfo.nev,x)
-curv = x -> nevanlinna.spectral_derive_second(iinfo.nev,x)^2     
-norm_grad = x -> nevanlinna.spectral_derive_para(iinfo.nev,[x])
-curv_grad = x -> (y = nevanlinna.spectral_derive_para_second(iinfo.nev,x);y.*y)
-#println(hessian(x ->nevanlinna.spectral_derive_second(nev,x),a))
-#@time nevanlinna.spectral_derive_second(iinfo.nev,1.0)
-#g = (x -> nevanlinna.spectral_derive_second(iinfo.nev,x))
-#f(a::Float64,b::Float64) = quadgk(g,a,b)
-#f = x -> nevanlinna.spectral_hardy_derive(iinfo.nev,x)
-#g = x -> nevanlinna.nevanlinna.sp_second(iinfo.nev,x)^2
-#G = zeros(Complex,2*nev.k_num)
-#nevanlinna.spectralintegral(iinfo,norm,curv)
-#println("hardy 0")
-#@time println(nevanlinna.spectralintegral(iinfo,norm,curv))
-#nev.hardy_coeff[:] = [0.0001 for x in 1:4*nev.k_num]
-#println("hardy 0.0001")
-#@time println(nevanlinna.spectralintegral(iinfo,norm,curv))
-#@time nevanlinna.spectralgrad(iinfo,G,norm_grad,curv_grad)
-#@time nevanlinna.spectralgrad(iinfo,G,norm_grad,curv_grad)
+nev = nevanlinna.Nevanlinna("correlate_green_tau_100.dat"
+,real_points,0.01,25;T=Float64x4,order="asc",statistics="B")
 
-#println("norm conserve part")
-#println(nevanlinna.set_norm_conserve(iinfo,norm))
-#println("curveture part")
-#println(nevanlinna.refrain_curveture(iinfo,curv))
+nevanlinna.write_boson_spectrum(nev,"current_current_correlation_tau_100_delta_001.dat";hardy=false)
+=#
 
-#nevanlinna.abcds_derive(nev,broadcast(+,convert(Vector{Complex{Float64}},nev.real_points),nev.delta*1im))
-#E = Matrix{Complex}(I,2,2)
-#G = zeros(Double64,4*nev.k_num)
-#@time println(nevanlinna.spectralgrad!(iinfo,G,norm_grad,curv_grad))
-#@time println(nevanlinna.spectralgrad!(iinfo,G,norm_grad,curv_grad))
-#println(typeof(nevanlinna.spectralgrad!(iinfo,G,norm_grad,curv_grad)))
+#iinfo = nevanlinna.Integralinfo(nev,wmin,wmax,0.0001;spectrumsum=8)
 
-nevanlinna.optimize_spectrum!(iinfo)
-nevanlinna.write_fermion_spectrum_hardy(nev,"CPA_optimize_up_Fe_100_Co_0_delta01_1000.dat")
+#nev.hardy_coeff[:] = [0.000 for x in 1:4*nev.k_num]
+#norm = x -> nevanlinna.spectral_hardy_derive(iinfo.nev,x)
+#curv = x -> nevanlinna.spectral_derive_second(iinfo.nev,x)^2     
+#norm_grad = x -> nevanlinna.spectral_derive_para(iinfo.nev,[x])
+#curv_grad = x -> (y = nevanlinna.spectral_derive_para_second(iinfo.nev,x);y.*y)
+
+
+#nevanlinna.optimize_spectrum!(iinfo)
+#nevanlinna.write_fermion_spectrum_hardy(nev,"spectrum_optimize_Fe_100_Co_0.dat")
