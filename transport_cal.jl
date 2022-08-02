@@ -1,4 +1,4 @@
-@everywhere include("/home/shota/Nevanlinna/transport.jl")
+@everywhere include("./transport.jl")
 #include("./transport.jl")
 @everywhere using MultiFloats
 @everywhere using DoubleFloats

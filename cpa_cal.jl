@@ -1,5 +1,5 @@
-@everywhere include("/home/shota/Nevanlinna/cpa.jl")
-include("/home/shota/Nevanlinna/Wannier.jl")
+@everywhere include("./cpa.jl")
+include("./Hamiltonian.jl")
 @everywhere using .CPA
 using .Hamiltonian.HR
 using LinearAlgebra

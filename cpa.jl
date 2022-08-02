@@ -1,4 +1,4 @@
-include("./Wannier.jl")
+include("./Hamiltonian.jl")
 
 module CPA
 using LinearAlgebra
