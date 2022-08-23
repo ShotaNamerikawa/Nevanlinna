@@ -25,6 +25,7 @@ mutable struct Transport{T}
     hr::Hamiltonian.HR.Hr{T}
     hkm::Hamiltonian.HamKmesh.Hamkmesh
     transform_mat::Array #column lattice vectors represented by cart
+    lunit::Float64 #Length unit of transform_mat in [m]
     temperature::Float64
     energy::Array{Float64}
     ne::Real
@@ -34,7 +35,7 @@ mutable struct Transport{T}
     constscat::Real
     E::Matrix{Complex{T}}
     function Transport(hr::Hamiltonian.HR.Hr{T},kmesh::Vector{Int64},temperature,energy,ne
-        ;delta=0.1,mu=0.0,tau=100*10^(-15),transform_mat=nontransform) where T
+        ;delta=0.1,mu=0.0,tau=100*10^(-15),transform_mat=nontransform,lunit=10^(-10)) where T
         ir = TemperatureSpir.Temperature_spir(temperature,100.0)
         u_sample = ir.basis_F.u(ir.smpl_tau_F.sampling_points)
         u_minus = -ir.basis_F.u(ir.beta .- ir.smpl_tau_F.sampling_points)
@@ -42,7 +43,7 @@ mutable struct Transport{T}
         mu = mu
         constscat = hbar_in_eV/(2*tau)
         E = Matrix{Complex}(I,hr.num_wann,hr.num_wann)
-        new{T}(ir,u_sample,u_minus,hr,hkm,transform_mat,
+        new{T}(ir,u_sample,u_minus,hr,hkm,transform_mat,lunit,
         temperature,energy,ne,mu,delta,tau,constscat,E)
     end
 end
@@ -217,7 +218,7 @@ function cal_diagonalized_correlation_k(tp::Transport{T},k::Array) where T
     #gtau=G(k,tau)
     gtau_minus = zeros(Complex{T},size(tp.ir.smpl_tau_F.sampling_points,1)
                        ,tp.hr.num_wann) #gtau_minus=G(k,-tau)
-    v = calc_diagonalized_green_func_k!(tp,k,gien) #G(k,ien) on sampling Matsubara points is calculated.
+    v = calc_diagonalized_green_func_k!(tp,k,gien)./hbar_in_eV #G(k,ien) on sampling Matsubara points is calculated.
     println("v value")
     println(v[:,1])
     gl = TemperatureSpir.fit(tp.ir.smpl_F,gien)#G(k,ien) -> G(k)_l
@@ -257,7 +258,7 @@ function cal_correlation_sum(tp::Transport{T}) where T
                 end
     result = zeros(Complex{T},size(tp.ir.smpl_tau_B.sampling_points,1),3)
     @time Hamiltonian.HamKmesh.apply_func_ksum!(func_k,result,tp.hkm)
-    result ./ tp.hkm.nk ./ det(tp.transform_mat) # Correlation time (-1)
+    result ./ tp.hkm.nk ./ det(tp.transform_mat) ./ tp.lunit # Correlation time (-1)
 end
 
 function cal_diagonalized_correlation_sum(tp::Transport{T}) where T
@@ -266,7 +267,7 @@ function cal_diagonalized_correlation_sum(tp::Transport{T}) where T
                 end
     result = zeros(Complex{T},size(tp.ir.smpl_tau_B.sampling_points,1),3)
     @time Hamiltonian.HamKmesh.apply_func_ksum!(func_k,result,tp.hkm)
-    result ./ tp.hkm.nk ./ det(tp.transform_mat) # do not forget multiply by hbar_in_Js
+    result ./ tp.hkm.nk ./ det(tp.transform_mat) ./ tp.lunit # do not forget multiply by hbar_in_Js
                                                     #when derive conductivity 
 end
 
@@ -463,7 +464,7 @@ end
 
 function cal_all_thermo_electric(ts::TS,mu)
     L11 = cal_response_func(ts::TS,mu,0)
-    L12 = 1/ele*cal_response_func(ts::TS,mu,1)
+    L12 = cal_response_func(ts::TS,mu,1)
     Seebeck = -1/ts.temperature*L12*inv(L11)
     Powerfactor = 1/ts.temperature^2*L12^2*inv(L11)
     L11,L12,Seebeck,Powerfactor

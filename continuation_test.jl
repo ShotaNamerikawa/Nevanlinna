@@ -79,6 +79,9 @@ tempspir = TemperatureSpir.Temperature_spir(300.0,10.0)
 real_points = collect(range(-10,10,6000))
 delta = 0.001
 
+nevan = nevanlinna.Nevanlinna("green_tanh2.dat",real_points,0.01,25;statistics="B")
+nevanlinna.write_boson_spectrum(nevan,"tanh2_spectrum.dat")
+
 #=
 #simple Lorentzian
 gamma = 1.0
@@ -240,13 +243,14 @@ compare_spectrum_boson(mtanh2,nevan,10;title="mtanh2 Double64",ylims=(-1,1),opti
 png("mtanh2_Double64_delta_0.1_omega_10.png")
 =#
 
+#=
 min = -1
 max = 1
 num = 1000
 wmin = -100.0
 wmax = 100.0
 real_points = collect(range(min,max;length=num))
-nevan = nevanlinna.Nevanlinna("Si_correlate_green_tau_100.dat",real_points,0.01,25;statistics="B")
+nevan = nevanlinna.Nevanlinna("Si_correlate_green_tau_100_kmesh_40.dat",real_points,0.01,25;statistics="B")
 #iinfo = nevanlinna.Integralinfo(nevan,-50.0,50.0,10^(-4))
 #nevanlinna.optimize_spectrum!(iinfo,statistics="Bose",iterations=30)
 compare_spectrum_boson_delta(nevan,10;title="current-current correlation Double64",start=0.1
@@ -258,3 +262,4 @@ png("Si_current_current_Double64_delta_compare_omega_0.1.png")
 compare_spectrum_boson_delta(nevan,0.001;title="current-current correlation Double64",start=0.001
 ,stop=0.01,step=0.001)
 png("Si_current_current_Double64_delta_0.01_compare_omega_0.001.png")
+=#

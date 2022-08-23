@@ -15,4 +15,4 @@ for l in 1:3
     hkha[:,:,l] = vecs'* hkwa[:,:,l] * vecs
 end
 
-println(hkha[1,1,1])
+println(hkha[2,1,1])

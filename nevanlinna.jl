@@ -10,6 +10,7 @@ module nevanlinna
     using SparseArrays
     using DoubleFloats
     using TOML
+
  
     linesearch = LineSearches.BackTracking(order=2)
     initialalpha = LineSearches.InitialStatic(scaled=true)
@@ -48,8 +49,8 @@ module nevanlinna
         for x in lines
             line = split(x," ")
             matsubara = T(parse(Float64,line[1]))
-            G_real = T(parse(Float64,line[2]))
-            G_imag = T(parse(Float64,line[3]))
+            G_real = T(parse(Float64,line[2]))*10^(-23)
+            G_imag = T(parse(Float64,line[3]))*10^(-23)
             if matsubara > 0
                 push!(imag_points,1im*matsubara)
                 if statistics == "F"

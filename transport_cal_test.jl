@@ -6,6 +6,7 @@ using .TransPort
 using .SpCond
 using PhysicalConstants.CODATA2014
 using LinearAlgebra
+using Printf
 
 function read_from_winfile(win_file::String)
     bohr = BohrRadius.val*10^10 # bohr radius in Angstrom
@@ -61,9 +62,28 @@ lattice_vector = vals["lattice_vector"]
 println("lattice vector is ")
 println(lattice_vector)
 
-ts = TransportfromSC.read_file("Si_tau_100_kmesh_8_spcond.dat",300.0)
-tc = TransportfromSC.cal_all_thermo_electric(ts,6.2449)
-println(tc[1])
+ts = TransportfromSC.read_file("Si_tau_100_kmesh_40_spcond.dat",300.0)
+chem = collect(range(4,9;step=0.0001))
+elcond_f="Si_tau_100_kmesh_40_elcond_T_300K.dat"
+L12_f="Si_tau_100_kmesh_40_L12_T_300K.dat"
+seebeck_f="Si_tau_100_kmesh_40_seebeck_T_300K.dat"
+powerfactor_f="Si_tau_100_kmesh_40_powerfactor_T_300K.dat"
+fp = open(elcond_f,"w")
+gp = open(L12_f,"w")
+hp = open(seebeck_f,"w")
+jp = open(powerfactor_f,"w")
+fps = [fp,gp,hp,jp]
+for i in 1:size(chem,1) 
+    tc = TransportfromSC.cal_all_thermo_electric(ts,chem[i])
+    for j in 1:size(fps,1)
+        @printf(fps[j],"%.15e %.15e %.15e %.15e %.15e %.15e %.15e\n",chem[i]
+        ,tc[j][1,1],tc[j][1,2],tc[j][1,3],tc[j][2,2],tc[j][2,3],tc[j][3,3])
+    end
+end
+
+for x in 1:size(fps,1)
+    close(fp[x])
+end
 #sc = SpCond.Spcond(Si_hr,[8,8,8],300,energy,8
 #;mu=6.2478,delta=0.01,transform_mat = transpose(lattice_vector))
 
