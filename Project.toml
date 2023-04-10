@@ -1,0 +1,13 @@
+name = "Nevanlinna"
+uuid = "5c612304-5d8e-4cf8-81ba-0af7711352ca"
+authors = ["ShotaNamerikawa"]
+version = "0.1.0"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
