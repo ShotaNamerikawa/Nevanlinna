@@ -1,1 +1,0 @@
-/home/shota/wannier_utils/src/wannier_utils/temperature_spir.py
