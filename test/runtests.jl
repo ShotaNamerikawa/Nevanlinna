@@ -104,6 +104,17 @@ function check_Schur_param_abs(Schur_param::Array{T};verbose = false) where T
     return islessone
 end
 
+function interpolate_plot(nevdata,original_rho,real_freq)
+    interpolated_green = Array{ComplexF64}(undef,size(real_freq,1))
+
+    for i in eachindex(real_freq)
+        interpolated_green[i] = interpolate_nev_func_last_0(nevdata,real_freq[i])
+    end
+
+    p = plot(real_freq,original_rho.(real_freq);label="original",xlabel="energy [eV]",ylabel = "spectral [1/eV]")
+    display(plot!(p,real_freq,1/pi.*imag.(interpolated_green);label="interpolation"))
+end
+
 @testset "Nevanlinna.jl" begin
     """
     test for gaussian continuation by Nevanlinna AC
@@ -116,7 +127,7 @@ end
         green = generate_green_from_spectral(gaussian,
                                              matsu_freq
                                              ;
-                                             freq_window = [-big(wmax),big(wmax)]
+                                             freq_window = [-big(wmax)-90,big(wmax)+90]
                                             )                                           
 
         @testset "causality" begin 
@@ -146,8 +157,8 @@ end
             @test check_Schur_param_abs(nevdata.phis;verbose=true)
         end
 
-                
-
+        interpolate_plot(nevdata,gaussian,real_freq)
+        
     end
 
     #test parameter
@@ -155,10 +166,11 @@ end
     var = 1.0
     wmax = 10.0
     temperature = 300.0
+    real_freq = collect(range(-10,10,1000))
 
     matsu_freq = generate_spir_data(temperature,wmax)[3]
     
-    gauss_test(mean,var,matsu_freq,wmax)
+    gauss_test(mean,var,matsu_freq,wmax,real_freq)
 
 end
 
