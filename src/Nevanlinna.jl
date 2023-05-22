@@ -15,7 +15,7 @@ using TOML
 export readgreenfile
 export NevanlinnaData
 export calc_thetas!,set_N_imag!
-export calc_pick_num!,derive_pick,phis_derive
+export calc_pick_num!,derive_pick,derive_phis!
 
 """
 Calculate mebius transformation.

@@ -5,6 +5,7 @@ mutable struct NevanlinnaData{T}
     Schur_param::Array{T}
     Pick_num::Int64
     N_imag::Int64
+    phis::Array{T}
     function NevanlinnaData(imag_points::Array{T}, matsu_green::Array{T}) where T
         nevdata = new{T}()
         nevdata.imag_points = imag_points

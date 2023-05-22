@@ -1,5 +1,5 @@
 function set_phis!(nev::NevanlinnaData{T}) where T
-    nev.phis = Array{Complex{T}}(undef,nev.N_imag)
+    nev.phis = Array{T}(undef,nev.N_imag)
 end
 
 
@@ -9,9 +9,9 @@ Calculate phis' value from sampling points value.
 function derive_phis!(nev::NevanlinnaData{T}) where T
     set_phis!(nev)
     nev.phis[1] = nev.thetas[1]
-    tmp_mat = ones(Complex{T},2,2)
+    tmp_mat = ones(T,2,2)
     for x in 2:nev.N_imag
-        abcds = nev.E
+        abcds = Array{T}(I,2,2)
         for y in 1:x-1
             @views tmp_mat[1,1] = (nev.imag_points[x] - nev.imag_points[y])/(nev.imag_points[x] - conj(nev.imag_points[y]))
             @views tmp_mat[1,2] = nev.phis[y]
@@ -23,8 +23,8 @@ function derive_phis!(nev::NevanlinnaData{T}) where T
 end
 
 function derive_abcds(nev::NevanlinnaData{T},z) where{T} 
-    abcds = nev.E
-    tmp_mat = ones(Complex{T},2,2)
+    abcds = Array{T}(I,2,2)
+    tmp_mat = ones(T,2,2)
     for x in 1:nev.N_imag
         tmp_mat[1,1] = (z - nev.imag_points[x])/(z - conj(nev.imag_points[x]))
         tmp_mat[1,2] = nev.phis[x]
