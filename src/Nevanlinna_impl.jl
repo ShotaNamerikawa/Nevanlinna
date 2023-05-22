@@ -38,7 +38,13 @@ function thetalast(nev::NevanlinnaData,z)
     return 0
 end
 
-function interpolate_nev_func_theta_last(nev::NevanlinnaData,z::T) where{T<:Number}
+function interpolate_nev_func_last_0(nev::NevanlinnaData{T},z) where T
+    abcds = derive_abcds(nev,z)
+    value = abcds[1, 2] / abcds[2, 2]
+    return 1.0im*(1 + value)/(1 - value)
+end
+
+function interpolate_nev_func_theta_last(thetalast::Function,nev::NevanlinnaData,z::T) where{T<:Number}
     abcds = derive_abcds(nev,z)
     value = (abcds[1,1]*thetalast(nev,z)+abcds[1,2])/(abcds[2,1]*thetalast(nev,z)+abcds[2,2])
     last_value = 1.0im*(1 + value)/(1 - value)
