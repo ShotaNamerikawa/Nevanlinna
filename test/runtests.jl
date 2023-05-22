@@ -3,6 +3,7 @@ using Test
 using QuadGK
 using SparseIR
 using PhysicalConstants.CODATA2014
+using Plots
 
 k_B_in_eV = 1/ElementaryCharge.val*BoltzmannConstant.val
 
@@ -70,16 +71,28 @@ function check_causality_green(green::Array{Complex{T}}) where T
     return causality
 end
 
+function check_unity_thetas(thetas::Array{Complex{T}}) where T
+    unity = true
+    for i in eachindex(thetas)
+        if abs(thetas[i]) > 1
+            unity = false
+        end
+    end 
+    unity
+end
+
 function check_Schur_param_abs(Schur_param::Array{T};verbose = false) where T
     
     islessone = true
 
     for i in eachindex(Schur_param)
         abs_sp = abs(Schur_param[i])
-        print("index:")
-        print(i)
-        print(" abs_value:")
-        println(abs_sp)
+        if verbose == true
+            print("index:")
+            print(i)
+            print(" abs_value:")
+            println(abs_sp)
+        end
         if abs_sp >= 1 
             islessone = false
             if verbose == true
@@ -95,14 +108,15 @@ end
     """
     test for gaussian continuation by Nevanlinna AC
     """
-    function gauss_test(mean,var,matsu_freq,wmax)
+    function gauss_test(mean,var,matsu_freq,wmax,real_freq)
         function gaussian(arg)
             return 1/sqrt(2*pi*var^2)*exp(-(arg-mean)^2/(2*var^2))
         end
+
         green = generate_green_from_spectral(gaussian,
                                              matsu_freq
                                              ;
-                                             freq_window = [-wmax,wmax]
+                                             freq_window = [-big(wmax),big(wmax)]
                                             )                                           
 
         @testset "causality" begin 
@@ -110,6 +124,29 @@ end
         end                        
 
         nevdata = Nevanlinna.NevanlinnaData(matsu_freq,green)
+
+        calc_thetas!(nevdata)
+
+        @testset "unity of thetas" begin
+            @test check_unity_thetas(nevdata.thetas)
+        end
+
+        set_N_imag!(nevdata)
+
+        print("N_imag:")
+        println(nevdata.N_imag)
+
+        @testset "existence of Nevanlinna func value" begin
+            @test nevdata.Pick_num >= 1
+        end
+
+        derive_phis!(nevdata)
+
+        @testset "phis value in disk" begin
+            @test check_Schur_param_abs(nevdata.phis;verbose=true)
+        end
+
+                
 
     end
 
