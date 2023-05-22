@@ -9,6 +9,7 @@ mutable struct NevanlinnaData{T}
         nevdata.imag_points = imag_points
         nevdata.matsu_green = matsu_green
         calc_thetas!(nevdata)
+        nevdata
     end
 end
 
