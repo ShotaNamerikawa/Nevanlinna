@@ -115,16 +115,14 @@ function interpolate_plot(nevdata,original_rho,real_freq)
     display(plot!(p,real_freq,1/pi.*imag.(interpolated_green);label="interpolation"))
 end
 
+
+
 @testset "Nevanlinna.jl" begin
     """
-    test for gaussian continuation by Nevanlinna AC
+    test for spectral function continuation by Nevanlinna AC
     """
-    function gauss_test(mean,var,matsu_freq,wmax,real_freq)
-        function gaussian(arg)
-            return 1/sqrt(2*pi*var^2)*exp(-(arg-mean)^2/(2*var^2))
-        end
-
-        green = generate_green_from_spectral(gaussian,
+    function spectral_test(spectral_func,matsu_freq,wmax,real_freq)
+        green = generate_green_from_spectral(spectral_func,
                                              matsu_freq
                                              ;
                                              freq_window = [-big(wmax)-90,big(wmax)+90]
@@ -168,9 +166,15 @@ end
     temperature = 300.0
     real_freq = collect(range(-10,10,1000))
 
+    function gaussian(arg)
+        return 1 / sqrt(2 * pi * var^2) * exp(-(arg - mean)^2 / (2 * var^2))
+    end
+
+    test_spectral(arg) = gaussian(arg)
+
     matsu_freq = generate_spir_data(temperature,wmax)[3]
     
-    gauss_test(mean,var,matsu_freq,wmax,real_freq)
+    spectral_test(test_spectral,matsu_freq,wmax,real_freq)
 
 end
 
