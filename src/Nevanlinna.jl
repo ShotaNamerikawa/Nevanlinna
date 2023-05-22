@@ -13,8 +13,8 @@ using MultiFloats
 using TOML
 
 export readgreenfile
-export Nevanlinna_data,Nevanlinna_data!
-export derive_thetas!,calc_pick_denominator!
+export NevanlinnaData
+export calc_thetas!,set_N_imag!
 export calc_pick_num!,derive_pick,phis_derive
 
 """

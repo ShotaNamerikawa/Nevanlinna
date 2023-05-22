@@ -7,6 +7,7 @@ end
 Calculate phis' value from sampling points value.
 """
 function derive_phis!(nev::NevanlinnaData{T}) where T
+    set_phis!(nev)
     nev.phis[1] = nev.thetas[1]
     tmp_mat = ones(Complex{T},2,2)
     for x in 2:nev.N_imag
