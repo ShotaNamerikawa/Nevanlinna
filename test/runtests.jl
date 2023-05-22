@@ -1,3 +1,4 @@
+using Nevanlinna
 using Test
 using QuadGK
 using SparseIR
@@ -106,9 +107,10 @@ end
 
         @testset "causality" begin 
             @test check_causality_green(green)
-        end        
-        
-        
+        end                        
+
+        nevdata = Nevanlinna.NevanlinnaData(matsu_freq,green)
+
     end
 
     #test parameter
