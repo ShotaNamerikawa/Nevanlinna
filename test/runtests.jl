@@ -120,6 +120,26 @@ end
     """
     test for spectral function continuation by Nevanlinna AC
     """
+    function test_generate_green_from_lorentz(matsu_freq,
+                                              peak,
+                                              gamma
+                                              ;
+                                              wmax = 10.0
+                                             )
+        function lorentz(x)
+            1/pi*gamma/((x - peak)^2 + gamma^2)
+        end
+
+        original_green_data = 1 ./ (matsu_freq .+ 1.0im*gamma)
+        back_continued_green = generate_green_from_spectral(lorentz,
+                                                            matsu_freq
+                                                            ;
+                                                            freq_window=[-big(wmax), big(wmax)]
+                                                            )
+        p = scatter(imag.(matsu_freq), imag.(back_continued_green); label="back continued")
+        display(scatter!(p,imag.(matsu_freq), imag.(original_green_data);label = "original",markersize=2))
+    end                
+
     function spectral_test(spectral_func,matsu_freq,wmax,real_freq)
         green = generate_green_from_spectral(spectral_func,
                                              matsu_freq
@@ -133,7 +153,7 @@ end
             @test check_causality_green(green)
         end                        
 
-        nevdata = Nevanlinna.NevanlinnaData(matsu_freq,green)
+        nevdata = Nevanlinna.generate_NevanlinnaData(matsu_freq,green)
         @testset "unity of thetas" begin
             @test check_unity_thetas(nevdata.thetas)
         end
@@ -150,8 +170,6 @@ end
         @testset "existence of Nevanlinna func value" begin
             @test nevdata.Pick_num >= 1
         end
-
-        derive_phis!(nevdata)
 
         @testset "phis value in disk" begin
             @test check_Schur_param_abs(nevdata.phis;verbose=true)
@@ -181,6 +199,9 @@ end
     
     spectral_test(test_spectral,matsu_freq,wmax,real_freq)
 
+    #peak = 0.0
+    #gamma = 1
+    #test_generate_green_from_lorentz(matsu_freq,peak,gamma)
 end
 
 nothing
