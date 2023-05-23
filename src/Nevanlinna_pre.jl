@@ -49,9 +49,9 @@ end
 Caution! This function has to be called for a given green function sample
 only at once!
 """
-function fit_input_points_to_Pick_num!(nev::NevanlinnaData{T}) where T
-    nev.imag_points = nev.smpl_imag_points[nev.N_imag:-1:1]
-    nev.thetas[1:nev.N_imag] .= nev.thetas[nev.N_imag:-1:1]
+function fit_input_data_to_Pick_num!(nev::NevanlinnaData{T}) where T
+    nev.imag_points = nev.imag_points[nev.N_imag:-1:1]
+    nev.thetas = nev.thetas[nev.N_imag:-1:1]
 end
 
 function derive_pick(nev::NevanlinnaData{T}) where T 
