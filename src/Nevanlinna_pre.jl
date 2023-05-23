@@ -12,8 +12,8 @@ function calc_pick_mat(nev::NevanlinnaData{T}) where T
     pick_mat = Array{eltype(nev.imag_points)}(undef,
                                               size(nev.imag_points,1),
                                               size(nev.imag_points,1))
-    for i in eachindex(nev.imag_points)
-        for j in eachindex(nev.imag_points)
+    for i in axes(nev.imag_points,1)
+        for j in axes(nev.imag_points,1)
             pick_mat[i,j] = (1.0 - nev.thetas[i].*conj(nev.thetas[j])) / (1.0 - mebius(nev.imag_points[i])*conj(mebius(nev.imag_points[j])) )
         end
     end     
@@ -23,12 +23,12 @@ end
 function calc_Pick_num(nev::NevanlinnaData{T}) where T
     pick_mat = calc_pick_mat(nev)
     Pick_num = 0
-    for i in eachindex(nev.imag_points)
-        if issuccess(cholesky!(pick_mat[1:i,1:i],check=false)) == false
-            Pick_num = i-1
+    for i in axes(nev.imag_points,1)
+        if issuccess(cholesky(pick_mat[1:i,1:i],check=false)) == false
             break
         end
-    end     
+        Pick_num += 1
+    end    
     return Pick_num         
 end
 
