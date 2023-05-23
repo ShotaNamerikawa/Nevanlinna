@@ -13,7 +13,7 @@ using LinearAlgebra
 #using TOML
 
 export readgreenfile
-export NevanlinnaData
+export NevanlinnaData,generate_NevanlinnaData
 export calc_thetas!,set_N_imag!
 export calc_pick_num!,derive_pick,derive_phis!
 export interpolate_nev_func_last_0
