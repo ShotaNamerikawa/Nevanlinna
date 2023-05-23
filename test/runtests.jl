@@ -16,8 +16,7 @@ function get_inv_temp(temperature)
     1/(k_B_in_eV*temperature)
 end
 
-function generate_spir_data(temperature,wmax)
-    β = get_inv_temp(temperature)
+function generate_spir_data(β,wmax)
     basis = FiniteTempBasis{Fermionic}(β,wmax,nothing)
     siw = MatsubaraSampling(basis; positive_only=true)
     matsu_freq = Array{ComplexF64}(undef,size(siw.sampling_points,1))
@@ -48,7 +47,7 @@ function generate_green_from_spectral(spectral_func,
                                       freq_window = (Big(-100.0),Big(100.0))  
                                       ) where T
     
-    green = Array{T}(undef,size(matsu_freqs,1))
+    green = Array{Complex{eltype(freq_window)}}(undef,size(matsu_freqs,1))
     
     for i in eachindex(green) 
         green[i] = convert_spectral_to_matsu_green(spectral_func,
@@ -125,22 +124,25 @@ end
         green = generate_green_from_spectral(spectral_func,
                                              matsu_freq
                                              ;
-                                             freq_window = [-big(wmax)-90,big(wmax)+90]
+                                             freq_window = [-big(wmax),big(wmax)]
                                             )                                           
 
+        println("eltype of green")
+        println(eltype(green))
         @testset "causality" begin 
             @test check_causality_green(green)
         end                        
 
         nevdata = Nevanlinna.NevanlinnaData(matsu_freq,green)
-
-        calc_thetas!(nevdata)
-
         @testset "unity of thetas" begin
             @test check_unity_thetas(nevdata.thetas)
         end
-
+        
         set_N_imag!(nevdata)
+
+        print("pick_num:")
+        println(nevdata.Pick_num)
+
 
         print("N_imag:")
         println(nevdata.N_imag)
@@ -164,7 +166,9 @@ end
     var = 1.0
     wmax = 10.0
     temperature = 300.0
+    β = 100.0
     real_freq = collect(range(-10,10,1000))
+
 
     function gaussian(arg)
         return 1 / sqrt(2 * pi * var^2) * exp(-(arg - mean)^2 / (2 * var^2))
@@ -172,7 +176,8 @@ end
 
     test_spectral(arg) = gaussian(arg)
 
-    matsu_freq = generate_spir_data(temperature,wmax)[3]
+
+    matsu_freq = generate_spir_data(β,wmax)[3]
     
     spectral_test(test_spectral,matsu_freq,wmax,real_freq)
 
