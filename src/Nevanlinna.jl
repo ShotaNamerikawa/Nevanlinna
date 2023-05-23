@@ -1,16 +1,16 @@
 module Nevanlinna
 
 using LinearAlgebra
-using QuadGK
-using ForwardDiff
-using Zygote
-using Optim
-using LineSearches
-using Random
-using SparseArrays
-using DoubleFloats
-using MultiFloats
-using TOML
+#using QuadGK
+#using ForwardDiff
+#using Zygote
+#using Optim
+#using LineSearches
+#using Random
+#using SparseArrays
+#using DoubleFloats
+#using MultiFloats
+#using TOML
 
 export readgreenfile
 export NevanlinnaData
@@ -37,6 +37,6 @@ end
 
 include("Nevanlinna_pre.jl")
 include("Nevanlinna_impl.jl")
-include("Nevanlinna_optim.jl")
+#include("Nevanlinna_optim.jl")
 
 end
