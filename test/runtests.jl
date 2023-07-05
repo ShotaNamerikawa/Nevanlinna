@@ -4,6 +4,7 @@ using QuadGK
 using SparseIR
 using PhysicalConstants.CODATA2014
 using Plots
+using Printf
 
 k_B_in_eV = 1/ElementaryCharge.val*BoltzmannConstant.val
 
@@ -41,6 +42,9 @@ function convert_spectral_to_matsu_green(spectral_func::Function,
     integral,error = quadgk(x -> kernel(x,matsu_freq)*spectral_func(x),min_freq,max_freq)    
 end
 
+"""
+Back continue spectral function to its Green function
+"""
 function generate_green_from_spectral(spectral_func,
                                       matsu_freqs::Array{T}
                                       ;
@@ -90,7 +94,7 @@ function check_Schur_param_abs(Schur_param::Array{T};verbose = false) where T
             print("index:")
             print(i)
             print(" abs_value:")
-            println(abs_sp)
+            @printf "%15.15f\n" abs_sp
         end
         if abs_sp >= 1 
             islessone = false
@@ -140,7 +144,8 @@ end
         display(scatter!(p,imag.(matsu_freq), imag.(original_green_data);label = "original",markersize=2))
     end                
 
-    function spectral_test(spectral_func,matsu_freq,wmax,real_freq)
+    function spectral_test(spectral_func,matsu_freq,wmax,real_freq;input_order="dsc")
+        #get green function of gauss spectral function
         green = generate_green_from_spectral(spectral_func,
                                              matsu_freq
                                              ;
@@ -153,7 +158,7 @@ end
             @test check_causality_green(green)
         end                        
 
-        nevdata = Nevanlinna.generate_NevanlinnaData(matsu_freq,green)
+        nevdata = Nevanlinna.generate_NevanlinnaData(matsu_freq,green;input_order = input_order)
         @testset "unity of thetas" begin
             @test check_unity_thetas(nevdata.thetas)
         end
@@ -197,7 +202,8 @@ end
 
     matsu_freq = generate_spir_data(β,wmax)[3]
     
-    spectral_test(test_spectral,matsu_freq,wmax,real_freq)
+    setprecision(128)
+    spectral_test(test_spectral,matsu_freq,wmax,real_freq;input_order="dsc")
 
     #peak = 0.0
     #gamma = 1
