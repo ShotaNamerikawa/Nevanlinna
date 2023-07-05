@@ -49,9 +49,18 @@ end
 Caution! This function has to be called for a given green function sample
 only at once!
 """
-function fit_input_data_to_Pick_num!(nev::NevanlinnaData{T}) where T
-    nev.imag_points = nev.imag_points[nev.N_imag:-1:1]
-    nev.thetas = nev.thetas[nev.N_imag:-1:1]
+function fit_input_data_to_Pick_num!(nev::NevanlinnaData{T};order = "dsc") where T
+    if order == "dsc" #Fixme! change also green function value!
+        nev.imag_points = nev.imag_points[nev.N_imag:-1:1]
+        nev.matsu_green = nev.matsu_green[nev.N_imag:-1:1]
+        nev.thetas = nev.thetas[nev.N_imag:-1:1] 
+    elseif order == "asc"
+        nev.imag_points = nev.imag_points[1:nev.N_imag]
+        nev.matsu_green = nev.matsu_green[nev.N_imag:-1:1]
+        nev.thetas = nev.thetas[1:nev.N_imag]
+    else
+        throw(ErrorException("choose order value from asc or dsc!"))
+    end
 end
 
 function derive_pick(nev::NevanlinnaData{T}) where T 
