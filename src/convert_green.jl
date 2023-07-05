@@ -48,5 +48,5 @@ function readgreenfile(greenfile::String;T=Float64,order::String = "dsc",statist
             end
         end            
     end
-    ConvertedGreenData(imag_points,nev_value;order = "dsc")
+    ConvertedGreenData(imag_points,nev_value;order = order)
 end
