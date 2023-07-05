@@ -38,6 +38,9 @@ function thetalast(nev::NevanlinnaData,z)
     return 0
 end
 
+"""
+calculate interpolated function in case Θ_(M+1) (z) == 0
+"""
 function interpolate_nev_func_last_0(nev::NevanlinnaData{T},z) where T
     abcds = derive_abcds(nev,z)
     value = abcds[1, 2] / abcds[2, 2]
@@ -47,7 +50,7 @@ end
 function interpolate_nev_func_theta_last(thetalast::Function,nev::NevanlinnaData,z::T) where{T<:Number}
     abcds = derive_abcds(nev,z)
     value = (abcds[1,1]*thetalast(nev,z)+abcds[1,2])/(abcds[2,1]*thetalast(nev,z)+abcds[2,2])
-    last_value = 1.0im*(1 + value)/(1 - value)
+    return last_value = 1.0im*(1 + value)/(1 - value)
 end
 
 
@@ -55,14 +58,14 @@ function interpolate_nev_func_hardy(nev::NevanlinnaData,z::T) where{T<:Number}
     abcds = derive_abcds(nev,z)
     value = (abcds[1,1]*hardysumderive(nev,z)+abcds[1,2])/(abcds[2,1]
     *hardysumderive(nev,z)+abcds[2,2])
-    last_value = 1.0im*(1 + value)/(1 - value)
+    return last_value = 1.0im*(1 + value)/(1 - value)
 end
 
 function interpolate_nev_func_hardy(nev::NevanlinnaData,z::T
     ,abcds::Vector{Complex}) where{T<:Complex}
     value = (abcds[1,1]*hardysumderive(nev,z)+abcds[1,2])/(abcds[2,1]
     *hardysumderive(nev,z)+abcds[2,2])
-    last_value = 1.0im*(1 + value)/(1 - value)
+    return last_value = 1.0im*(1 + value)/(1 - value)
 end
 
 function interpolate_nev_func_gen_func(nev::NevanlinnaData{T},z
@@ -70,21 +73,21 @@ function interpolate_nev_func_gen_func(nev::NevanlinnaData{T},z
     abcds = derive_abcds(nev,z)
     value = (abcds[1,1]*func(z)+abcds[1,2])/(abcds[2,1]
     *func(z)+abcds[2,2])
-    last_value = 1.0im*(1 + value)/(1 - value)
+    return last_value = 1.0im*(1 + value)/(1 - value)
 end
 
     
 function derive_spectral(nev::NevanlinnaData{T},x::S) where{T,S<:AbstractFloat}
-    1/pi*imag(interpolate_nev_func_theta_last(nev,x + nev.delta*1im))  
+    return 1/pi*imag(interpolate_nev_func_theta_last(nev,x + nev.delta*1im))  
 end
 
 
 function derive_spectral_hardy(nev::NevanlinnaData,x::T) where{T<:Number}
-    1/pi*imag(interpolate_nev_func_hardy(nev,x + nev.delta*1.0im))  
+    return 1/pi*imag(interpolate_nev_func_hardy(nev,x + nev.delta*1.0im))  
 end
 
 function derive_spectral_univ(nev::NevanlinnaData,x::T,func) where{T<:Number}
-    1/pi*imag(interpolate_nev_func_gen_func(nev,x+nev.delta*1.0im,func))
+    return 1/pi*imag(interpolate_nev_func_gen_func(nev,x+nev.delta*1.0im,func))
 end
 
 function derive_coeff(nev::NevanlinnaData,x::T) where{T<:Number}
